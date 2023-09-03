@@ -4,8 +4,8 @@ import NewsEntry from "../models/newsEntry.js";
 // main get route that has filters, sorts, etc
 export const getNews = async (req, res) => {
   /* parameters for filtering:
-  - sortBy: sort by date (default), title, publication, positivity_score
-  - sortOrder: asc (default), des
+  - sortBy: sort by date, title, publication, positivity_score (default)
+  - sortOrder: asc, des (default)
   - keyword: (default="")search in title/author/publication/description
   - startDate: (default=2022-01-01)start date for filtering
   - endDate: (default=Today)end date for filtering
@@ -16,8 +16,8 @@ export const getNews = async (req, res) => {
   let { sortBy, sortOrder, keyword, startDate, endDate, maxResults } =
     req.query;
   // set default values for parameters if not provided
-  const sortByDefault = "date";
-  const sortOrderDefault = "asc";
+  const sortByDefault = "positivity_score";
+  const sortOrderDefault = "desc";
   const keywordDefault = "";
   const startDateDefault = "2022-01-01";
   const endDateDefault = new Date().toISOString().split("T")[0];
@@ -75,7 +75,7 @@ export const getNews = async (req, res) => {
 
     // return results
     res.status(200).json({
-      data: toSend,
+      articles: toSend,
       totalResults: toSend.length,
     });
   } catch (error) {
