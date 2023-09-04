@@ -1,5 +1,8 @@
 import mongoose from "mongoose";
 import NewsEntry from "../models/newsEntry.js";
+import NewsAPI from "newsapi";
+import Sentiment from "sentiment";
+import axios from "axios";
 
 // main get route that has filters, sorts, etc
 export const getNews = async (req, res) => {
@@ -175,4 +178,54 @@ export const deleteNewsEntry = async (req, res) => {
 
   await NewsEntry.findByIdAndRemove(id);
   res.json({ message: "Post deleted successfully." });
+};
+
+export const dailyUpdate = async (req, res) => {
+  try {
+    const newsapi = new NewsAPI("06cda5faf3cf4396b3d4daf4a8540669");
+    var sentiment = new Sentiment();
+    const URL = "https://promising-news.uc.r.appspot.com/news";
+
+    const results = await newsapi.v2.topHeadlines({
+      language: "en",
+      country: "us",
+      page_size: 100,
+      page: 1,
+    });
+    const articles = results.articles;
+
+    let successCount = 0;
+    let failCount = 0;
+
+    for (let i = 0; i < articles.length; i++) {
+      const article = articles[i];
+      let score = sentiment.analyze(article.title).score;
+      if (score >= 0) {
+        score = score / 10 + 0.5;
+        const payload = {
+          title: article.title,
+          author: article.author,
+          description: article.description,
+          date: article.publishedAt,
+          url: article.url,
+          image_url: article.urlToImage,
+          publication: article.source.name,
+          positivity_score: score,
+        };
+        try {
+          await axios.post(URL, payload);
+          successCount++;
+        } catch (error) {
+          failCount++;
+        }
+      }
+    }
+    res.status(200).json({
+      message: "Daily update executed",
+      successCount: successCount,
+      failCount: failCount,
+    });
+  } catch (error) {
+    res.status(404).json({ message: error.message });
+  }
 };
